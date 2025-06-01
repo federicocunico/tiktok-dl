@@ -4,14 +4,17 @@ import yt_dlp
 from TikTokApi import TikTokApi
 import argparse
 
+from tiktok_utils import dump_link
+
 parser = argparse.ArgumentParser(description="Fetch TikTok trending videos and save their download links.")
 parser.add_argument("username", type=str, help="TikTok username to fetch videos from")
 parser.add_argument("--count", type=int, default=10, help="Number of videos to fetch (default: 10)")
+parser.add_argument("--output", type=str, default="links.txt", help="File to save the download links (default: links.txt)")
 
 args = parser.parse_args()
 
 ms_token = open("ms_token.txt", "r").read().strip()
-with open("links.txt", "w") as f:
+with open(args.output, "w") as f:
     f.write("")  # Clear the file before writing new links
 
 
@@ -20,22 +23,18 @@ async def fetch_trending_videos(count=10):
         await api.create_sessions(ms_tokens=[ms_token], num_sessions=1, sleep_after=3, browser=os.getenv("TIKTOK_BROWSER", "chromium"))
 
         username = args.username
-        if not username.startswith("@"):
-            username = "@" + username
+        if username.startswith("@"):
+            username = username[1:]  # Remove '@' if present
 
         # get user info
-        user = api.user(username)
+        user = api.user(username.replace("@", ""))
         user_data = await user.info()
-        user_id = f'@{user_data["userInfo"]["user"]["uniqueId"]}'
+        # user_id = f'@{user_data["userInfo"]["user"]["uniqueId"]}'
 
         async for video in user.videos(count=10):
             print(video)
             print(video.as_dict)
-            video_url = "https://www.tiktok.com/{}/video/{}".format(user_id, video.id)
-            fname = f"{username}_{video.id}"
-
-            with open("links.txt", "a") as f:
-                f.write(f"{video_url}|{fname}\n")
+            dump_link(args.output, video, username) #, user_id)
             
             asyncio.sleep(0.1)
 

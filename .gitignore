@@ -1,4 +1,9 @@
 .vscode/
+__pycache__/
+*.pyc
 
 ms_token.txt
 *.mp4
+
+*.txt
+!requirements.txt
